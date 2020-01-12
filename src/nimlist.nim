@@ -9,7 +9,6 @@ import streams
 import strutils
 
 const packagesUrl = "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json"
-# const packagesUrl = "https://flenniken.net/test.json"
 const jsonFilename = "packages.json"
 const tempFilename = "packages.json.temp"
 const htmlFilename = "packages.html"
@@ -102,9 +101,6 @@ proc main(cachedFilename: string) =
     var section = packageBlock % [name, url, vc, desc, license, web]
     file.writeLine(section)
   file.writeLine(footer)
-
-
-  # Open the html in the default browser.
 
 
 when isMainModule:
