@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.1.1"
 author        = "Steve Flenniken"
 description   = "Browse nim packages in your browser."
 license       = "MIT"
@@ -20,6 +20,3 @@ proc open_in_browser(filename: string) =
 task m, "Build nimlist command line application":
   exec "nim c -d:ssl --out:nimlist src/nimlist"
   open_in_browser("packages.html")
-
-task build, "Build":
-  switch("d", "ssl")
