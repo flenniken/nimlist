@@ -8,8 +8,8 @@ import json
 import streams
 import strutils
 
-# const packagesUrl = "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json"
-const packagesUrl = "https://flenniken.net/test.json"
+const packagesUrl = "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json"
+# const packagesUrl = "https://flenniken.net/test.json"
 const jsonFilename = "packages.json"
 const tempFilename = "packages.json.temp"
 const htmlFilename = "packages.html"
@@ -23,21 +23,6 @@ let header = """
   <title>Nim Package List</title>
   <style>
 .package {
-  padding-left: 1.5em;
-  text-indent: -1.5em;
-}
-.licenseMIT {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  background: #F8E6AE url(mit.svg) no-repeat 0px 0px;
-}
-.vcgit {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  background-image: 
-    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMCcgaGVpZ2h0PScxMCc+PGxpbmVhckdyYWRpZW50IGlkPSdncmFkaWVudCc+PHN0b3Agb2Zmc2V0PScxMCUnIHN0b3AtY29sb3I9JyNGMDAnLz48c3RvcCBvZmZzZXQ9JzkwJScgc3RvcC1jb2xvcj0nI2ZjYycvPiA8L2xpbmVhckdyYWRpZW50PjxyZWN0IGZpbGw9J3VybCgjZ3JhZGllbnQpJyB4PScwJyB5PScwJyB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJy8+PC9zdmc+");
 }
   </style>
 </head>
@@ -48,16 +33,15 @@ let header = """
 
 let packageBlock = """
 <div class="package">
-<span class="license">$5</span>
-<a class="url" href="$2">$1</a>
- -- 
-<span class="desc">$4</span>
-$6
+<a class="url" href="$2">$1</a> --
+$4 $6
 </div>
 """
 
+let optionalWebPart = "<a class=\"web\" href=\"$1\"> ...</a>"
+
+
 let footer = """
-  <!-- <script src="js/scripts.js"></script> -->
 </body>
 </html>
 """
@@ -114,7 +98,7 @@ proc main(cachedFilename: string) =
     if url == web:
       web = ""
     else:
-      web = "<a class=\"web\" href=\"$1\"> more</a>" % web
+      web = optionalWebPart % web
     var section = packageBlock % [name, url, vc, desc, license, web]
     file.writeLine(section)
   file.writeLine(footer)
