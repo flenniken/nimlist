@@ -1,4 +1,3 @@
 # nimlist
 
-Show the nim packages in your browser all on one page.
-
+Show the nim package list in your browser on one page.
