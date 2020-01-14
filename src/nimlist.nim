@@ -25,13 +25,23 @@ let header = """
   <meta charset="utf-8">
   <title>Nim Package List</title>
   <style>
+#packages {
+}
 .package {
+}
+.ptags {
+  font-size: small;
+  font-style: italic;
+}
+#tags {
+}
+.tag {
 }
   </style>
 </head>
 <body>
 <h3>Nim Packages</h3>
-<p>Nim package list. Click tags to see the list of <a href="#tags">tags</a>.</p>
+<p>Nim package list. See the package <a href="#tags">tags</a> at the bottom.</p>
 <div id="packages">
 """
 
@@ -40,7 +50,7 @@ let header = """
 let packageBlock = """
 <div id="p$7" class="package">
 <a class="url" href="$2">$1</a> --
-$4 $6
+$4 $6 $8
 </div>
 """
 
@@ -109,6 +119,7 @@ proc main(cachedFilename: string) =
   file.writeLine(header)
   for node in nodeTree.elems:
     var name, url, vc, desc, license, web: string
+    var pTags = newSeq[string]()
     for key, value in node.pairs:
       # name, url, vc, desc, license, web
       case key
@@ -128,6 +139,7 @@ proc main(cachedFilename: string) =
       of "tags":
         for node in value.elems:
           let tag = node.str
+          pTags.add(tag)
           if not tag2nameList.hasKey(tag):
             tag2nameList[tag] = newSeq[string]()
           tag2nameList[tag].add(name)
@@ -137,7 +149,11 @@ proc main(cachedFilename: string) =
       web = ""
     else:
       web = optionalWebPart % web
-    var section = packageBlock % [name, url, vc, desc, license, web, $pNum]
+
+    var theTags: string
+    if pTags.len > 0:
+      theTags = "<span class=\"ptags\">[$1]</span>" % pTags.join(", ")
+    var section = packageBlock % [name, url, vc, desc, license, web, $pNum, theTags]
     pNum += 1
     file.writeLine(section)
 
