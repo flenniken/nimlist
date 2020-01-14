@@ -1,15 +1,11 @@
 # Package
 
-version       = "0.1.2"
+version       = "0.1.3"
 author        = "Steve Flenniken"
-description   = "Browse nim packages in your browser."
+description   = "Browse nim packages in your browser with lists by names and tags."
 license       = "MIT"
 srcDir        = "src"
 bin           = @["nimlist"]
-
-
-
-# Dependencies
 
 requires "nim >= 1.0.4"
 
@@ -18,5 +14,5 @@ proc open_in_browser(filename: string) =
   exec "(hash open 2>/dev/null && open $1) || echo 'open $1'" % filename
 
 task m, "Build nimlist command line application":
-  exec "nim c -r -d:ssl --out:nimlist src/nimlist"
+  exec "nim c -r -d:ssl --hints:off --out:nimlist src/nimlist"
   open_in_browser("packages.html")
