@@ -10,12 +10,11 @@ import strutils
 import tables
 import algorithm
 
+# The url of the nim packages json.
 const packagesUrl = "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json"
-# const packagesUrl = "https://flenniken.net/test.json"
-const jsonFilename = "packages.json"
-const tempFilename = "packages.json.temp"
-const htmlFilename = "packages.html"
+# Download a new json file when it is x minutes old.
 const minutesOld = 60 * 24
+# Don't show tags if there is only x tags or less of them.
 const minimumTags = 1
 
 let header = """
@@ -77,16 +76,21 @@ let footer = """
 </html>
 """
 
-proc main(cachedFilename: string) =
-  # cachedFilename is the file name of the cached package list file.
+proc main() =
+  ## Download the nim package list to the user's .nimlist folder then
+  ## make an html file out of it.
+
+  let nimListDir = joinPath(getHomeDir(), ".nimlist")
+  discard existsOrCreateDir(nimListDir)
+  let jsonFilename = joinPath(nimListDir, "packages.json")
 
   # Determine whether we need to download the package list file.
   var download = false
-  if not fileExists(cachedFilename):
+  if not fileExists(jsonFilename):
     download = true
   else:
     # Download the package list if it is old.
-    let jsonTime = getLastModificationTime(cachedFilename)
+    let jsonTime = getLastModificationTime(jsonFilename)
     let now = getTime()
     let dur = initDuration(minutes=minutesOld)
     if now - jsonTime > dur:
@@ -95,14 +99,16 @@ proc main(cachedFilename: string) =
   if download:
     echo "Downloading package list..."
     var client = newHttpClient()
+    let tempFilename = joinPath(nimListDir, "packages.json.temp")
     client.downloadFile(packagesUrl, tempFilename)
-    moveFile(tempFilename, cachedFilename)
+    moveFile(tempFilename, jsonFilename)
 
   # Read the json data from the cached file.
-  var stream = newFileStream(cachedFilename, fmRead)
-  var nodeTree = parseJson(stream, cachedFilename)
+  var stream = newFileStream(jsonFilename, fmRead)
+  var nodeTree = parseJson(stream, jsonFilename)
 
   # Write the package data as html.
+  let htmlFilename = joinPath(nimListDir, "packages.html")
   var file = open(htmlFilename, fmWrite)
   defer: file.close()
 
@@ -187,11 +193,14 @@ proc main(cachedFilename: string) =
   file.writeLine(footer)
 
   # Open the html file in the default browser.
-  echo "Open packages.html in your browser."
+  echo """
+Open the html file in your browser:
+open $1
+""" % [htmlFilename]
 
 when isMainModule:
   try:
-    main(jsonFilename)
+    main()
   except:
     let message = getCurrentExceptionMsg()
     echo "Error: " & message

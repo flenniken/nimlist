@@ -15,4 +15,4 @@ proc open_in_browser(filename: string) =
 
 task m, "Build nimlist command line application":
   exec "nim c -r -d:ssl --hints:off --out:nimlist src/nimlist"
-  open_in_browser("packages.html")
+  open_in_browser("~/.nimlist/packages.html")
