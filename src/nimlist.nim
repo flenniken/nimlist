@@ -9,6 +9,7 @@ import streams
 import strutils
 import tables
 import algorithm
+import times
 
 type
   # name, url, vc, desc, license, web, tags, id
@@ -62,7 +63,7 @@ proc createPackageList(filename: string): OrderedTable[string, Package] =
       else:
         discard
 
-    if url == web:
+    if url == web or web == "":
       web = ""
     else:
       let optionalWebPart = "<a class=\"web\" href=\"$1\"> (docs)</a>"
@@ -142,6 +143,7 @@ function showTags() {
   </head>
   <body>
   <h3>Nim Packages</h3>
+  <h5>as of $1</h5>
   <ul>
   <li><button id="hide" onclick="hideTags()">Hide</button> tags for less cluttered reading.</li>
   <li><button id="show" onclick="showTags()">Show</button> tags for for exploring by topic. See the package <a href="#tags">tags</a> at the bottom.</li>
@@ -170,9 +172,14 @@ function showTags() {
   </html>
   """
 
+  # todo: handle alias
+  # name -- see <a href="pxx">alias</a>
+
   var file = open(htmlFilename, fmWrite)
   defer: file.close()
-  file.writeLine(header)
+
+  let dt = now().utc
+  file.writeLine(header % [format(dt, "yyyy-MM-dd")])
 
   # Write the packages one per line.
   for name, p in packageList.pairs:
