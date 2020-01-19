@@ -116,11 +116,36 @@ proc writeHtmlFile(packageList: OrderedTable[string, Package],
   }
   .tag {
   }
+  button {
+    border-radius: 12px;
+    background-color: #4CAF50;
+  }
     </style>
+  <script type="text/javascript">
+function hideTags() {
+  var tagSection = document.getElementById("tags");
+  tagSection.style.display = "none";
+  var ptags = document.getElementsByClassName("ptags");
+  for (var i = 0; i < ptags.length; i++) {
+      ptags[i].style.display = 'none';
+  }
+}
+function showTags() {
+  var tagSection = document.getElementById("tags");
+  tagSection.style.display = "block";
+  var ptags = document.getElementsByClassName("ptags");
+  for (var i = 0; i < ptags.length; i++) {
+      ptags[i].style.display = 'inline';
+  }
+}
+  </script>
   </head>
   <body>
   <h3>Nim Packages</h3>
-  <p>Nim package list. See the package <a href="#tags">tags</a> at the bottom.</p>
+  <ul>
+  <li><button id="hide" onclick="hideTags()">Hide</button> tags for less cluttered reading.</li>
+  <li><button id="show" onclick="showTags()">Show</button> tags for for exploring by topic. See the package <a href="#tags">tags</a> at the bottom.</li>
+  </ul>
   <div id="packages">
   """
 
@@ -135,8 +160,8 @@ proc writeHtmlFile(packageList: OrderedTable[string, Package],
 
   let middleBlock = """
   </div>
-  <h3>Tags</h3>
   <div id="tags">
+  <h3>Tags</h3>
   """
 
   let footer = """
