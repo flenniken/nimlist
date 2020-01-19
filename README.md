@@ -5,7 +5,7 @@ Show the nim package list in your browser on one page.
 Here is an example page. The page will tell you when it was
 created.
 
-[Nim Packages](https://htmlpreview.github.io/?https://htmlpreview.github.io/?https://raw.githubusercontent.com/flenniken/nimlist/master/packages.html)
+[Nim Packages](https://htmlpreview.github.io/?https://raw.githubusercontent.com/flenniken/nimlist/master/packages.html)
 
 ## Install
 
