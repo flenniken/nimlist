@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.4"
+version       = "0.1.5"
 author        = "Steve Flenniken"
 description   = "View the nim package list in your browser."
 license       = "MIT"

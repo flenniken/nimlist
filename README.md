@@ -5,7 +5,7 @@ Show the nim package list in your browser on one page.
 Here is an example page. The page will tell you when it was
 created.
 
-[Nim Packages](https://htmlpreview.github.io/?https://github.com/flenniken/)
+[Nim Packages](https://htmlpreview.github.io/?https://htmlpreview.github.io/?https://raw.githubusercontent.com/flenniken/nimlist/master/packages.html)
 
 ## Install
 
@@ -35,9 +35,10 @@ open /home/steve/.nimlist/packages.html
 
 ## Open Packages.html
 
-In your browser file > open enter the filename above to see the web page.
+In your browser select file > open then browse to the html filename
+above and open it to see the web page.
 
-On the mac at the terminal you can open it with:
+Or, on the mac at the terminal, you can open it with:
 
 ~~~
 open /home/steve/.nimlist/packages.html
