@@ -10,79 +10,183 @@ import strutils
 import tables
 import algorithm
 
-# The url of the nim packages json.
-const packagesUrl = "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json"
-# Download a new json file when it is x minutes old.
-const minutesOld = 60 * 24
-# Don't show tags if there is only x tags or less of them.
-const minimumTags = 1
+type
+  # name, url, vc, desc, license, web, tags, id
+  Package = object
+    name: string
+    url: string
+    vc: string
+    desc: string
+    license: string
+    web: string
+    tags: seq[string]
+    id: int # the package index
 
-let header = """
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Nim Package List</title>
-  <style>
-#packages {
-}
-.package {
-}
-.ptags {
-  font-size: small;
-  font-style: italic;
-}
-#tags {
-}
-.tag {
-}
-  </style>
-</head>
-<body>
-<h3>Nim Packages</h3>
-<p>Nim package list. See the package <a href="#tags">tags</a> at the bottom.</p>
-<div id="packages">
-"""
-
-# name = 1, url = 2, vc = 3, desc = 4, license = 5, web = 6
-
-let packageBlock = """
-<div id="p$7" class="package">
-<a class="url" href="$2">$1</a> --
-$4 $6 $8
-</div>
-"""
-
-let optionalWebPart = "<a class=\"web\" href=\"$1\"> (docs)</a>"
-
-let middleBlock = """
-</div>
-<h3>Tags</h3>
-<div id="tags">
-"""
-
-let tagBlock = """
-<div class="tag">
-<span>$1</span> <span>$2</span>: $3
-</div>
-"""
-
-let aName = "<a href=\"#p$1\">$2</a>"
+  PackagesUsingTag = object
+    id: int # the tag index
+    pNames: seq[string] # list of package names that use a tag.
 
 
-let footer = """
-</div>
-</body>
-</html>
-"""
+proc createPackageList(filename: string): OrderedTable[string, Package] =
+  ## Create a package list from the json package list file.
 
-proc main() =
-  ## Download the nim package list to the user's .nimlist folder then
-  ## make an html file out of it.
+  result = initOrderedTable[string, Package]()
 
-  let nimListDir = joinPath(getHomeDir(), ".nimlist")
-  discard existsOrCreateDir(nimListDir)
-  let jsonFilename = joinPath(nimListDir, "packages.json")
+  # Read the json data from the cached file.
+  var stream = newFileStream(filename, fmRead)
+  var nodeTree = parseJson(stream, filename)
+
+  var id = 0
+  for node in nodeTree.elems:
+    var name, url, vc, desc, license, web: string
+    var tags = newSeq[string]()
+    for key, value in node.pairs:
+      # name, url, vc, desc, license, web, tags
+      case key
+      of "name":
+        name = value.str
+      of "url":
+        url = value.str
+      of "method":
+        vc = value.str
+      of "description":
+        desc = value.str
+      of "license":
+        license = value.str
+      of "web":
+        web = value.str
+      of "tags":
+        for node in value.elems:
+          let tag = node.str
+          tags.add(tag)
+      else:
+        discard
+
+    if url == web:
+      web = ""
+    else:
+      let optionalWebPart = "<a class=\"web\" href=\"$1\"> (docs)</a>"
+      web = optionalWebPart % web
+    # name, url, vc, desc, license, web, tags
+    let package = Package(name: name, url: url, vc: vc, desc: desc, license: license,
+                          web: web, tags: tags, id: id)
+    result[name] = package
+    id += 1
+
+
+proc createTag2nameList(packageList: OrderedTable[string, Package]):
+                       OrderedTable[string, PackagesUsingTag] =
+  ## Create a tag to package name table from the package list.
+
+  result = initOrderedTable[string, PackagesUsingTag]()
+  var id = 0
+  for name, package in packageList.pairs:
+    for tag in package.tags:
+      if not result.hasKey(tag):
+        result[tag] = PackagesUsingTag(id: id, pNames: newSeq[string]())
+        id += 1
+      result[tag].pNames.add(name)
+
+  # Sort the the tag2nameList table by the number of packages that use
+  # the tag.
+  result.sort(proc (x,y: (string, PackagesUsingTag)): int =
+    result = cmp(x[1].pNames.len, y[1].pNames.len), SortOrder.Descending)
+
+
+proc writeHtmlFile(packageList: OrderedTable[string, Package],
+       tag2nameList: OrderedTable[string, PackagesUsingTag], htmlFilename: string) =
+  ## Write the package list as html to the given file.
+
+  let header = """
+  <!doctype html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Nim Package List</title>
+    <style>
+  #packages {
+  }
+  .package {
+  }
+  .ptags {
+    font-size: small;
+    font-style: italic;
+  }
+  #tags {
+  }
+  .tag {
+  }
+    </style>
+  </head>
+  <body>
+  <h3>Nim Packages</h3>
+  <p>Nim package list. See the package <a href="#tags">tags</a> at the bottom.</p>
+  <div id="packages">
+  """
+
+  # name = 1, url = 2, vc = 3, desc = 4, license = 5, web = 6
+
+  let packageBlock = """
+  <div id="p$7" class="package">
+  <a class="url" href="$2">$1</a> --
+  $4 $6 $8
+  </div>
+  """
+
+  let middleBlock = """
+  </div>
+  <h3>Tags</h3>
+  <div id="tags">
+  """
+
+  let footer = """
+  </div>
+  </body>
+  </html>
+  """
+
+  var file = open(htmlFilename, fmWrite)
+  defer: file.close()
+  file.writeLine(header)
+
+  # Write the packages one per line.
+  for name, p in packageList.pairs:
+    var theTags: string
+    if p.tags.len > 0:
+      var htmlTags = newSeq[string]()
+      for tag in p.tags:
+        htmlTags.add("<a href=\"#t$1\">$2</a>" % [$tag2nameList[tag].id, tag])
+      theTags = "<span class=\"ptags\">[$1]</span>" % htmlTags.join(", ")
+    var section = packageBlock % [p.name, p.url, p.vc, p.desc, p.license, p.web, $p.id, theTags]
+    file.writeLine(section)
+
+  file.writeLine(middleBlock)
+
+  let tagBlock = """
+  <div id="t$1" class="tag">
+  <span>$2</span> <span>$3</span> <span class="tags2">$4</span>
+  </div>
+  """
+
+  # Write the tag block.
+  for tag, pUsingName in tag2nameList.pairs:
+    var names = newSeq[string]()
+    for name in pUsingName.pNames:
+      var package = packageList[name]
+      let aName = "<a href=\"#p$1\">$2</a>"
+      names.add(aName % [$package.id, name])
+    var section = tagBlock % [$pUsingName.id, tag, $pUsingName.pNames.len, names.join(" ")]
+    file.writeLine(section)
+
+  file.writeLine(footer)
+
+
+proc downloadPackageJson(jsonFilename: string) =
+
+  # The url of the nim packages json.
+  const packagesUrl = "https://raw.githubusercontent.com/nim-lang/packages/master/packages.json"
+  # Download a new json file when it is x minutes old.
+  const minutesOld = 60 * 24
 
   # Determine whether we need to download the package list file.
   var download = false
@@ -99,104 +203,37 @@ proc main() =
   if download:
     echo "Downloading package list..."
     var client = newHttpClient()
-    let tempFilename = joinPath(nimListDir, "packages.json.temp")
+    let tempFilename = jsonFilename & ".temp"
     client.downloadFile(packagesUrl, tempFilename)
     moveFile(tempFilename, jsonFilename)
 
-  # Read the json data from the cached file.
-  var stream = newFileStream(jsonFilename, fmRead)
-  var nodeTree = parseJson(stream, jsonFilename)
 
-  # Write the package data as html.
+proc main() =
+  ## Download the nim package list to the user's .nimlist folder then
+  ## make an html file out of it.
+
+  # Create the .nimlist folder if necessary.
+  let nimListDir = joinPath(getHomeDir(), ".nimlist")
+  discard existsOrCreateDir(nimListDir)
+
+  # Download the package list json if necessary.
+  let jsonFilename = joinPath(nimListDir, "packages.json")
+  downloadPackageJson(jsonFilename)
+
+  # Parse the package list.
+  var packageList = createPackageList(jsonFilename)
+  var tag2nameList = createTag2nameList(packageList)
+
+  # Write the package list as html.
   let htmlFilename = joinPath(nimListDir, "packages.html")
-  var file = open(htmlFilename, fmWrite)
-  defer: file.close()
-
-  # count, tag name, package name
-  # 30 tag1 name name name name...
-  # 27 tag2 name name...
-  # 10 tag3 name name...
-  # 1 tag4 name
-  # 1 tag5 name
-
-  var pNum = 1
-  var name2pNum = initTable[string, int]()
-  var tag2nameList = initOrderedTable[string, seq[string]]()
-  file.writeLine(header)
-  for node in nodeTree.elems:
-    var name, url, vc, desc, license, web: string
-    var pTags = newSeq[string]()
-    for key, value in node.pairs:
-      # name, url, vc, desc, license, web
-      case key
-      of "name":
-        name = value.str
-        name2pNum[name] = pNum
-      of "url":
-        url = value.str
-      of "method":
-        vc = value.str
-      of "description":
-        desc = value.str
-      of "license":
-        license = value.str
-      of "web":
-        web = value.str
-      of "tags":
-        for node in value.elems:
-          let tag = node.str
-          pTags.add(tag)
-          if not tag2nameList.hasKey(tag):
-            tag2nameList[tag] = newSeq[string]()
-          tag2nameList[tag].add(name)
-      else:
-        discard
-    if url == web:
-      web = ""
-    else:
-      web = optionalWebPart % web
-
-    var theTags: string
-    if pTags.len > 0:
-      theTags = "<span class=\"ptags\">[$1]</span>" % pTags.join(", ")
-    var section = packageBlock % [name, url, vc, desc, license, web, $pNum, theTags]
-    pNum += 1
-    file.writeLine(section)
-
-  file.writeLine(middleBlock)
-
-  # let tagBlock = """
-  # <div class="tag">
-  # <span>count</span> <span>tag</span>: name name name...
-  # </div>
-  # """
-
-  # Sort the the tag2nameList table by the number of packages that use
-  # the tag.
-  # proc sort[A, B](t: var OrderedTable[A, B]; cmp: proc (x, y: (A, B)): int)
-  tag2nameList.sort(proc (x,y: (string, seq[string])): int =
-    result = cmp(x[1].len, y[1].len), SortOrder.Descending)
-
-  # Write the tag block.
-  for tag, nameList in tag2nameList.pairs:
-    # Skip the tags with only 1 package.
-    if nameList.len <= minimumTags:
-      break
-    var names = newSeq[string]()
-    for name in nameList:
-      # let aName = "<a href=\"#p$1\">$2</a>"
-      var pNum: int = name2pNum[name]
-      names.add(aName % [$pNum, name])
-    var section = tagBlock % [$nameList.len, tag, names.join(" ")]
-    file.writeLine(section)
-
-  file.writeLine(footer)
+  writeHtmlFile(packageList, tag2nameList, htmlFilename)
 
   # Open the html file in the default browser.
   echo """
 Open the html file in your browser:
 open $1
 """ % [htmlFilename]
+
 
 when isMainModule:
   try:

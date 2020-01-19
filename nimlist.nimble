@@ -2,7 +2,7 @@
 
 version       = "0.1.3"
 author        = "Steve Flenniken"
-description   = "Browse the nim package list in your browser."
+description   = "View the nim package list in your browser."
 license       = "MIT"
 srcDir        = "src"
 bin           = @["nimlist"]
