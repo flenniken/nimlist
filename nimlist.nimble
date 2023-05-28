@@ -1,13 +1,13 @@
 # Package
 
-version       = "0.1.5"
+version       = "0.1.6"
 author        = "Steve Flenniken"
 description   = "View the nim package list in your browser."
 license       = "MIT"
 srcDir        = "src"
 bin           = @["nimlist"]
 
-requires "nim >= 1.0.4"
+requires "nim >= 1.6.12"
 
 proc open_in_browser(filename: string) =
   ## Open the given file in a browser if the system has an open command.

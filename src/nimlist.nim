@@ -270,7 +270,7 @@ open $1
 when isMainModule:
   try:
     main()
-  except:
+  except CatchableError:
     let message = getCurrentExceptionMsg()
     echo "Error: " & message
     echo "Stack at time of error:"
